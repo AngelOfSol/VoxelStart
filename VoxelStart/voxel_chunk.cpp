@@ -37,73 +37,58 @@ void voxel_chunk::draw(GLenum mode)
 }
 void voxel_chunk::on(int x, int y, int z)
 {
-	auto& vox_ref = this->m_data[x][y][z];
-	if (!vox_ref.on)
-	{
-		this->changed = true;
-		vox_ref.on = true;
-
-		auto inBounds = [this](int x, int y, int z) -> bool
-		{
-			if (x < 0 || y < 0 || z < 0)
-				return false;
-
-			if (x >= this->m_data.dim_size<0>() || y >= this->m_data.dim_size<1>() || z >= this->m_data.dim_size<2>())
-				return false;
-
-			return true;
-		};
-
-
-		for (int i = -1; i < 2; i++)
-		{
-			for (int j = -1; j < 2; j++)
-			{
-				for (int k = -1; k < 2; k++)
-				{
-					if ((i != 0 || j != 0 || k != 0) && inBounds(x + i, y + j, z +k))
-					{
-						this->m_data[x + i][y + j][z + k].neighbors += 1;
-					}
-				}
-			}
-		}
-		// increment members
-	}
+	this->set(true, x, y, z);
 }
 void voxel_chunk::off(int x, int y, int z)
 {
+	this->set(false, x, y, z);
+}
+void voxel_chunk::set(bool b, int x, int y, int z)
+{
+	int change = b ? 1 : -1;
+
 	auto& vox_ref = this->m_data[x][y][z];
-	if (vox_ref.on)
+	if (vox_ref.on != b)
 	{
 		this->changed = true;
-		vox_ref.on = false;
-		auto inBounds = [this](int x, int y, int z) -> bool
+		vox_ref.on = b;
+
+		for (int i = -1; i < 2; i += 2)
 		{
-			if (x < 0 || y < 0 || z < 0)
-				return false;
-
-			if (x >= this->m_data.dim_size<0>() || y >= this->m_data.dim_size<1>() || z >= this->m_data.dim_size<2>())
-				return false;
-
-			return true;
-		};
-
-
-		for (int i = -1; i < 2; i++)
-		{
-			for (int j = -1; j < 2; j++)
+			if (x + i >= 0 && x + i < this->m_data.dim_size<0>())
 			{
-				for (int k = -1; k < 2; k++)
-				{
-					if ((i != 0 || j != 0 || k != 0) && inBounds(x + i, y + j, z + k))
-					{
-						this->m_data[x + i][y + j][z + k].neighbors -= 1;
-					}
-				}
+				auto& ref = this->m_data[x + i][y][z];
+
+				ref.neighbors += change;
+				ref.x[(-i + 1) / 2] = b;
 			}
 		}
-		// decrement members
+
+		auto x_plane = this->m_data[x];
+		for (int j = -1; j < 2; j += 2)
+		{
+			if (y + j >= 0 && y + j < this->m_data.dim_size<1>())
+			{
+				auto& ref = x_plane[y + j][z];
+
+				ref.neighbors += change;
+				ref.y[(-j + 1) / 2] = b;
+			}
+		}
+
+		auto y_axis = x_plane[y];
+		for (int k = -1; k < 2; k += 2)
+		{
+			if (z + k >= 0 && z + k < this->m_data.dim_size<2>())
+			{
+				auto& ref = y_axis[z + k];
+
+				ref.neighbors += change;
+				ref.z[(-k + 1) / 2] = b;
+			}
+		}
+
+
 	}
 }
 bool voxel_chunk::get(int x, int y, int z) const
@@ -123,35 +108,79 @@ void voxel_chunk::fill_buffers()
 	std::vector<GLfloat> data;
 	int count = 0;
 
-	for (int z = 0; z < this->m_data.dim_size<2>(); z++)
-	{
-		for (int x = 0; x < this->m_data.dim_size<0>(); x++)
-		{
-			for (int y = 0; y < this->m_data.dim_size<1>(); y++)
-			{
-				if (this->m_data[x][y][z].on && this->m_data[x][y][z].neighbors < 26)
-				{
-					data.emplace_back(static_cast<GLfloat>(x));
-					data.emplace_back(static_cast<GLfloat>(y));
-					data.emplace_back(static_cast<GLfloat>(z));
 
-					count++;
+	for (int x = 0; x < this->m_data.dim_size<0>(); x++)
+	{
+		auto x_plane = this->m_data[x];
+		for (int y = 0; y < this->m_data.dim_size<1>(); y++)
+		{
+			auto y_axis = x_plane[y];
+			for (int z = 0; z < this->m_data.dim_size<2>(); z++)
+			{
+				auto& current_voxel = y_axis[z];
+				if (current_voxel.on && current_voxel.neighbors < voxel::max_neighbors)
+				{
+					// loop through x, y, z arrays and create faces
+
+					for (int i = 0; i < 2; i++)
+					{
+						if (!current_voxel.x[i])
+						{
+							data.emplace_back(static_cast<GLfloat>(x + 0.5));
+							data.emplace_back(static_cast<GLfloat>(y + 0.5));
+							data.emplace_back(static_cast<GLfloat>(z + 0.5));
+							data.emplace_back(static_cast<GLfloat>(i * 2 - 1));
+							data.emplace_back(static_cast<GLfloat>(0));
+							data.emplace_back(static_cast<GLfloat>(0));
+							count++;
+						}
+					}
+					for (int i = 0; i < 2; i++)
+					{
+						if (!current_voxel.y[i])
+						{
+							data.emplace_back(static_cast<GLfloat>(x + 0.5));
+							data.emplace_back(static_cast<GLfloat>(y + 0.5));
+							data.emplace_back(static_cast<GLfloat>(z + 0.5));
+							data.emplace_back(static_cast<GLfloat>(0));
+							data.emplace_back(static_cast<GLfloat>(i * 2 - 1));
+							data.emplace_back(static_cast<GLfloat>(0));
+							count++;
+						}
+					}
+
+					for (int i = 0; i < 2; i++)
+					{
+						if (!current_voxel.z[i])
+						{
+							data.emplace_back(static_cast<GLfloat>(x + 0.5));
+							data.emplace_back(static_cast<GLfloat>(y + 0.5));
+							data.emplace_back(static_cast<GLfloat>(z + 0.5));
+							data.emplace_back(static_cast<GLfloat>(0));
+							data.emplace_back(static_cast<GLfloat>(0));
+							data.emplace_back(static_cast<GLfloat>(i * 2 - 1));
+							count++;
+						}
+					}
 				}
 			}
 		}
 	}
 
 	this->m_active = count;
-
 	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * data.size(), data.data(), GL_STATIC_DRAW);
 
 	// let opengl know the first attribute is the position at 3 floats long starting at 0
 
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(0));
+	// let opengl know the second attribute is the position at 3 floats long starting at 3
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(GL_FLOAT)));
 
 	// enable the attributes
 
 	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 
 }
 
@@ -160,3 +189,5 @@ void voxel_chunk::unbind_buffers()
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
+
+int voxel_chunk::voxel::max_neighbors = 6;

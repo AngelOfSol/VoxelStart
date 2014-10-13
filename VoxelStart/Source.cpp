@@ -21,7 +21,7 @@ struct Data
 	glm::mat4 base;
 	glm::mat4 rotate;
 	GLfloat angle;
-	const int size = 300;
+	const int size = 400;
 	int elapsed;
 	glm::vec2 mouse;
 };
@@ -41,13 +41,20 @@ void idle()
 	auto invert = glm::vec2{ -diff.y, diff.x };
 	data->rotate *= glm::rotate(glm::radians( change * .1f), glm::vec3(invert, 0));
 
-	data->transform = data->base
-		* data->rotate
-		* glm::translate(glm::vec3(-data->size / 2.0f));
+	//data->transform = data->base 
+	//	* data->rotate
+	//	 * glm::translate(glm::vec3(-data->size / 2.0f));
 
-	//data->transform = data->base * glm::translate(glm::vec3(diff.x, -diff.y, 0) * 0.1f) * glm::rotate(glm::radians(45.0f), glm::vec3{ 0.0f, 1.0f, 0.0f }) * glm::rotate(data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f }) *
-	//	glm::translate(glm::vec3(-data->size / 2.0f));
+	data->transform = data->base
+		//* glm::translate(glm::vec3(0, 0, -0.005f * data->elapsed))
+		* glm::translate(glm::vec3(0, 0, -data->size))
+		* glm::rotate(data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f })
+		* glm::translate(glm::vec3(-data->size * 0.25))
+		;
+
 	uniform(*data->shader, "transform", data->transform);
+	uniform(*data->shader, "world_transform", glm::mat4());
+
 	glutPostRedisplay();
 }
 
@@ -103,9 +110,10 @@ int main(int argc, char** argv)
 				auto recentered_y = -y + data->size / 2;
 				auto recentered_z = -z + data->size / 2;
 				if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
-					&& abs(recentered_x - recentered_y) <= data->size / 2
-					&& abs(recentered_y - recentered_z) <= data->size / 2
-					&& abs(recentered_z - recentered_x) <= data->size / 2) // abs(x + y - z) <= 5
+
+					&& abs(recentered_y + recentered_x) >= data->size / 12.0
+					) // abs(x + y - z) <= 5
+				
 					voxel_data.on(x, y, z);
 			}
 		}
@@ -120,25 +128,49 @@ int main(int argc, char** argv)
 	auto diff = end - begin;
 	std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count() << std::endl;
 	shader::ptr vertex = make_shader(shaders::voxel::vertex, GL_VERTEX_SHADER);
+	shader::ptr geometry = make_shader(shaders::voxel::geometry, GL_GEOMETRY_SHADER);
 	shader::ptr fragment = make_shader(shaders::voxel::fragment, GL_FRAGMENT_SHADER);
 
-	float zNear = .01;
-	float zFar = 20;
+	float zNear = .01f;
+	float zFar = 600.0f;
 
-	data->shader = make_program({ vertex, fragment });
+	data->shader = make_program({ vertex, geometry, fragment });
 	glUseProgram(data->shader->id);
 	data->base =
-		glm::perspective(glm::radians(70.0f), 1.0f, zNear, zFar) 
-		* glm::scale(glm::vec3(0.07f  / data->size * 5.0f))
+		glm::perspective(glm::radians(60.0f), 1.0f, zNear, zFar)
 		;
+
+	uniform(*data->shader, "num_lights", 2);
+
+	std::vector<glm::vec3> lights;
+
+	for (int i = -1; i < 2; i += 2)
+	{
+		for (int j = -1; j < 2; j += 2)
+		{
+			for (int k = -1; k < 1; k += 2)
+			{
+				lights.push_back(glm::vec3{
+					i * (data->size + 10) / 2 + data->size / 2
+					, j * (data->size + 10) / 2 + data->size / 2
+					, k * (data->size + 10) / 2 + data->size / 2
+					
+				});
+			}
+		}
+	}
+
+	uniform(*data->shader, "lights", lights);
+
 
 
 	glPointSize(5);
 	//glUseProgram(0);
 
+	//glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
-	glDepthFunc(GL_LEQUAL);
+	glDepthFunc(GL_LESS);
 	glDepthRange(0.0f, 1.0f);
 	glClearDepth(1.0f);
 

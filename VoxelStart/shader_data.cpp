@@ -9,22 +9,125 @@ namespace voxel
 	std::string vertex = R"(
 #version 410
 
-uniform mat4 transform;
 layout (location = 0) in vec3 position;
-out vec4 color;
+
+layout (location = 1) in vec3 normal;
+
+out vec4 gNormal;
+
 void main()
 {
-	gl_Position = vec4((transform * vec4(position, 1)).xyz, 1);
-	color = vec4(1, 1, 0.6, 1) / distance(vec3(-0), position) * 20;
+	gl_Position = vec4(position, 1);
+	gNormal = vec4(normal, 1);
 }
+
 )";
 
-	std::string fragment = R"(
+	std::string geometry = R"(
+
 #version 410
-in vec4 color;
+
+const mat4 top_left = mat4(
+0.5, 0.5, 0.5, 0
+, 0.5 , 0.5, 0.5, 0
+, 0.5, 0.5, 0.5, 0
+, 0, 0, 0, 1
+);
+const mat4 top_right = mat4(
+0.5, 0.5, -0.5, 0
+, 0.5 , 0.5, -0.5, 0
+, 0.5, -0.5, 0.5, 0
+, 0, 0, 0, 1
+);
+const mat4 bottom_left = mat4(
+0.5, -0.5, 0.5, 0
+, -0.5 , 0.5, 0.5, 0
+, -0.5, 0.5, 0.5, 0
+, 0, 0, 0, 1
+);
+const mat4 bottom_right = mat4(
+0.5, -0.5, -0.5, 0
+, -0.5 , 0.5, -0.5, 0
+, -0.5, -0.5, 0.5, 0
+, 0, 0, 0, 1
+);
+
+
+in vec4 gNormal[];
+out vec4 fNormal;
+out vec4 world_position;
+
+uniform mat4 world_transform;
+uniform mat4 transform;
+
+layout(points) in;
+layout(triangle_strip, max_vertices = 4) out;
+
+void main() 
+{
+	vec4 base = gl_in[0].gl_Position;
+	vec4 normal = gNormal[0];
+
+	vec4 bottom_left_vert = (base + bottom_left * normal);
+	gl_Position = transform * bottom_left_vert;
+	world_position = world_transform * bottom_left_vert;
+	fNormal = normal;
+	EmitVertex();
+	
+	vec4 top_left_vert = (base + top_left * normal);
+	gl_Position = transform * top_left_vert;
+	world_position = world_transform * top_left_vert;
+	fNormal = normal;
+	EmitVertex();
+	
+	vec4 bottom_right_vert = (base + bottom_right * normal);
+	gl_Position = transform * bottom_right_vert;
+	world_position = world_transform * bottom_right_vert;
+	fNormal = normal;
+	EmitVertex();
+	
+
+	vec4 top_right_vert = (base + top_right * normal);
+	gl_Position = transform * top_right_vert;
+	world_position = world_transform * top_right_vert;
+	fNormal = normal;
+	EmitVertex();
+	
+
+	EndPrimitive();
+}
+
+
+)";
+
+std::string fragment = R"(
+#version 410
+
+uniform vec3 lights[12];
+uniform int num_lights;
+
+in vec4 fNormal;
+in vec4 world_position;
+
+float calc_light(vec4 light, vec4 position)
+{
+	vec4 diff = light - position;
+	float attenuation = length(diff);
+	float index_of_refrac = clamp(dot(fNormal, normalize(diff)), 0, 1);
+
+	return index_of_refrac / attenuation;
+}
+
 void main(void) 
 {
-	gl_FragColor = color;
+	float mult = 0.1;
+
+	for(int i = 0; i < num_lights; i++)
+	{
+		mult += 5 * calc_light(vec4(lights[i], 1), world_position);
+	}
+
+	gl_FragColor = vec4(0.6, 0.6, 0.8, 1) * (mult);
 }
 )";
 }

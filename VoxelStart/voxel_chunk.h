@@ -18,6 +18,7 @@ public:
 	
 	void on(int x, int y, int z);
 	void off(int x, int y, int z);
+	void set(bool b, int x, int y, int z);
 	bool get(int x, int y, int z)  const;
 private:
 
@@ -27,16 +28,29 @@ private:
 
 	void unbind_buffers();
 
+
 	struct voxel
 	{
 	public:
+		static int max_neighbors;
+
 		bool on;
+
+		bool x[2]; // x[0] is this->x - 1 and x[1] is this->x + 1
+		bool y[2]; // same as above
+		bool z[2]; // same as above
+
 		int neighbors;
 		voxel()
 			: on(false)
 			, neighbors(0)
 		{
-
+			for (auto& b : x)
+				b = false;
+			for (auto& b : y)
+				b = false;
+			for (auto& b : z)
+				b = false;
 		}
 	};
 
