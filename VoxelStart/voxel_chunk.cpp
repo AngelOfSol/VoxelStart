@@ -108,6 +108,16 @@ void voxel_chunk::fill_buffers()
 	std::vector<GLfloat> data;
 	int count = 0;
 
+	auto center_x = -this->m_data.dim_size<0>() / 2.0f + 0.5f;
+	auto center_y = -this->m_data.dim_size<1>() / 2.0f + 0.5f;
+	auto center_z = -this->m_data.dim_size<2>() / 2.0f + 0.5f;
+
+	auto append = [&data, center_x, center_y, center_z](int x, int y, int z)
+	{
+		data.push_back(static_cast<GLfloat>(x + center_x));
+		data.push_back(static_cast<GLfloat>(y + center_y));
+		data.push_back(static_cast<GLfloat>(z + center_z));
+	};
 
 	for (int x = 0; x < this->m_data.dim_size<0>(); x++)
 	{
@@ -126,9 +136,7 @@ void voxel_chunk::fill_buffers()
 					{
 						if (!current_voxel.x[i])
 						{
-							data.emplace_back(static_cast<GLfloat>(x + 0.5));
-							data.emplace_back(static_cast<GLfloat>(y + 0.5));
-							data.emplace_back(static_cast<GLfloat>(z + 0.5));
+							append(x, y, z);
 							data.emplace_back(static_cast<GLfloat>(i * 2 - 1));
 							data.emplace_back(static_cast<GLfloat>(0));
 							data.emplace_back(static_cast<GLfloat>(0));
@@ -139,9 +147,7 @@ void voxel_chunk::fill_buffers()
 					{
 						if (!current_voxel.y[i])
 						{
-							data.emplace_back(static_cast<GLfloat>(x + 0.5));
-							data.emplace_back(static_cast<GLfloat>(y + 0.5));
-							data.emplace_back(static_cast<GLfloat>(z + 0.5));
+							append(x, y, z);
 							data.emplace_back(static_cast<GLfloat>(0));
 							data.emplace_back(static_cast<GLfloat>(i * 2 - 1));
 							data.emplace_back(static_cast<GLfloat>(0));
@@ -153,9 +159,7 @@ void voxel_chunk::fill_buffers()
 					{
 						if (!current_voxel.z[i])
 						{
-							data.emplace_back(static_cast<GLfloat>(x + 0.5));
-							data.emplace_back(static_cast<GLfloat>(y + 0.5));
-							data.emplace_back(static_cast<GLfloat>(z + 0.5));
+							append(x, y, z);
 							data.emplace_back(static_cast<GLfloat>(0));
 							data.emplace_back(static_cast<GLfloat>(0));
 							data.emplace_back(static_cast<GLfloat>(i * 2 - 1));

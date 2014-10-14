@@ -124,7 +124,7 @@ void main(void)
 
 	for(int i = 0; i < num_lights; i++)
 	{
-		mult += 5 * calc_light(vec4(lights[i], 1), world_position);
+		mult += 15 * calc_light(vec4(lights[i], 1), world_position);
 	}
 
 	gl_FragColor = vec4(0.6, 0.6, 0.8, 1) * (mult);

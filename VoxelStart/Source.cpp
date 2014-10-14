@@ -9,9 +9,20 @@
 #include "uniform.h"
 #include <glm/glm/gtc/quaternion.hpp>
 #include <chrono>
+#include <random>
 using std::unique_ptr;
 using std::make_unique;
+/*
+Create subdivide,
+	-a subdivide size
+	-a render size
 
+	-figure out how to center properly
+
+scale the models properly,
+create voxel_chunk holder
+
+*/
 struct Data
 {
 	std::unique_ptr<voxel_chunk> voxel;
@@ -21,7 +32,7 @@ struct Data
 	glm::mat4 base;
 	glm::mat4 rotate;
 	GLfloat angle;
-	const int size = 400;
+	const int size = 200;
 	int elapsed;
 	glm::vec2 mouse;
 };
@@ -34,22 +45,15 @@ void idle()
 	data->elapsed += change;
 	data->angle += 0.0005f * change;
 
-	auto rotate_x = glm::fquat();
-
 	glm::vec2 middle = glm::vec2{ 400, 400 };
 	auto diff = data->mouse - middle;
 	auto invert = glm::vec2{ -diff.y, diff.x };
 	data->rotate *= glm::rotate(glm::radians( change * .1f), glm::vec3(invert, 0));
 
-	//data->transform = data->base 
-	//	* data->rotate
-	//	 * glm::translate(glm::vec3(-data->size / 2.0f));
-
 	data->transform = data->base
-		//* glm::translate(glm::vec3(0, 0, -0.005f * data->elapsed))
 		* glm::translate(glm::vec3(0, 0, -data->size))
 		* glm::rotate(data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f })
-		* glm::translate(glm::vec3(-data->size * 0.25))
+		* glm::scale(glm::vec3(0.75))
 		;
 
 	uniform(*data->shader, "transform", data->transform);
@@ -94,7 +98,7 @@ int main(int argc, char** argv)
 	{
 		return 1;
 	}
-	glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+	glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
 
 	data = make_unique<Data>();
 	data->voxel = make_unique<voxel_chunk>(data->size, data->size, data->size);
@@ -110,8 +114,7 @@ int main(int argc, char** argv)
 				auto recentered_y = -y + data->size / 2;
 				auto recentered_z = -z + data->size / 2;
 				if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
-
-					&& abs(recentered_y + recentered_x) >= data->size / 12.0
+					&& (z * x / (y ? y : 1)) <= data->size / 2
 					) // abs(x + y - z) <= 5
 				
 					voxel_data.on(x, y, z);
@@ -140,20 +143,27 @@ int main(int argc, char** argv)
 		glm::perspective(glm::radians(60.0f), 1.0f, zNear, zFar)
 		;
 
-	uniform(*data->shader, "num_lights", 2);
+	uniform(*data->shader, "num_lights", 8);
 
 	std::vector<glm::vec3> lights;
+
+	std::default_random_engine def;
+
+	auto s = std::chrono::time_point_cast<std::chrono::nanoseconds>(clock.now());
+	def.seed(s.time_since_epoch().count());
+	std::uniform_int<> rand(0, data->size * 2);
+	std::cout << ";;" <<rand.min() << ", " << rand.max();
 
 	for (int i = -1; i < 2; i += 2)
 	{
 		for (int j = -1; j < 2; j += 2)
 		{
-			for (int k = -1; k < 1; k += 2)
+			for (int k = -1; k < 2; k += 2)
 			{
 				lights.push_back(glm::vec3{
-					i * (data->size + 10) / 2 + data->size / 2
-					, j * (data->size + 10) / 2 + data->size / 2
-					, k * (data->size + 10) / 2 + data->size / 2
+					i * rand(def) / 2.0f
+					, j * rand(def) / 2.0f
+					, k * rand(def) / 2.0f
 					
 				});
 			}
