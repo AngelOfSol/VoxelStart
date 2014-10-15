@@ -4,9 +4,9 @@
 #include "voxel_chunk.h"
 #include "nd_array.h"
 #include "shader_program.h"
-#include <initializer_list>
 #include "shader_data.h"
 #include "uniform.h"
+#include <initializer_list>
 #include <glm/glm/gtc/quaternion.hpp>
 #include <chrono>
 #include <random>
@@ -32,7 +32,7 @@ struct Data
 	glm::mat4 base;
 	glm::mat4 rotate;
 	GLfloat angle;
-	const int size = 200;
+	const int size = 400;
 	int elapsed;
 	glm::vec2 mouse;
 };
@@ -152,7 +152,6 @@ int main(int argc, char** argv)
 	auto s = std::chrono::time_point_cast<std::chrono::nanoseconds>(clock.now());
 	def.seed(s.time_since_epoch().count());
 	std::uniform_int<> rand(0, data->size * 2);
-	std::cout << ";;" <<rand.min() << ", " << rand.max();
 
 	for (int i = -1; i < 2; i += 2)
 	{
