@@ -40,11 +40,11 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(ProjectDir)..\dep\include;$(IncludePath)</IncludePath>
-    <LibraryPath>G:\VoxelStart\dep\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)..\dep\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(ProjectDir)..\dep\include;$(IncludePath)</IncludePath>
-    <LibraryPath>G:\VoxelStart\dep\lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(ProjectDir)..\dep\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

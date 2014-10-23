@@ -1,11 +1,15 @@
 #include "voxel_chunk.h"
 #include "debug.h"
+#include "shader_data.h"
+#include "uniform.h"
 #include <initializer_list>
 voxel_chunk::voxel_chunk(int width, int height, int depth)
 	: m_data(width, height, depth)
+	, scale(1)
 {
 	glGenVertexArrays(1, &this->m_vao);
 	glGenBuffers(1, &this->m_vbo);
+
 }
 
 
@@ -19,6 +23,17 @@ void voxel_chunk::update()
 {
 	if (this->changed)
 	{
+		/*
+			if changed, start a thread to construct the contents of the new buffer
+			, when that thread is done working, actually copy the buffer
+		*/
+
+
+
+		if (status == std::future_status::ready)
+		{
+
+		}
 		this->bind_buffers();
 
 		this->fill_buffers();
@@ -29,10 +44,11 @@ void voxel_chunk::update()
 	}
 }
 
-void voxel_chunk::draw(GLenum mode)
+void voxel_chunk::draw(glm::mat4 perspective, glm::mat4 view_port)
 {
 	this->bind_buffers();
-	glDrawArrays(mode, 0, this->m_active);
+	this->set_uniforms(perspective, view_port);
+	glDrawArrays(GL_POINTS, 0, this->m_active);
 	this->unbind_buffers();
 }
 void voxel_chunk::on(int x, int y, int z)
@@ -194,4 +210,60 @@ void voxel_chunk::unbind_buffers()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
+void voxel_chunk::set_uniforms(glm::mat4 perspective, glm::mat4 view_port)
+{
+	glUseProgram(voxel_chunk::voxel_shader()->id);
+	auto modelview = view_port * transform * glm::scale(glm::vec3(this->scale));
+	uniform(*voxel_chunk::voxel_shader(), "transform", perspective * modelview);
+	uniform(*voxel_chunk::voxel_shader(), "camera_transform", modelview);
+	uniform(*voxel_chunk::voxel_shader(), "normal_transform", glm::transpose(glm::inverse(modelview)));
+	uniform(*voxel_chunk::voxel_shader(), "view_transform", view_port);
+}
+const shader_program::ptr voxel_chunk::voxel_shader()
+{
+	if (voxel_chunk::s_voxel_shader == nullptr)
+	{
+		shader::ptr vertex = make_shader(shaders::voxel::vertex, GL_VERTEX_SHADER);
+		shader::ptr geometry = make_shader(shaders::voxel::geometry, GL_GEOMETRY_SHADER);
+		shader::ptr fragment = make_shader(shaders::voxel::fragment, GL_FRAGMENT_SHADER);
+
+		voxel_chunk::s_voxel_shader = make_program({ vertex, geometry, fragment });
+	}
+	return voxel_chunk::s_voxel_shader;
+}
+void voxel_chunk::subdivide(int denom)
+{
+	data_array new_data(this->width() * denom, this->height() * denom, this->depth() * denom);
+	for (int i = 0; i < this->width(); i++)
+	{
+		auto plane = this->m_data[i];
+		for (int j = 0; j < this->height(); j++)
+		{
+			auto line = plane[j];
+			for (int k = 0; k < this->depth(); k++)
+			{
+				auto ele = line[k];
+
+				for (int copy_to_x = i * denom; copy_to_x < (i + 1) * denom; copy_to_x++)
+				{
+					auto copy_plane = new_data[copy_to_x];
+					for (int copy_to_y = j * denom; copy_to_y < (j + 1) * denom; copy_to_y++)
+					{
+						auto copy_line = copy_plane[copy_to_y];
+						for (int copy_to_z = k * denom; copy_to_z < (k + 1) * denom; copy_to_z++)
+						{
+							copy_line[copy_to_z] = ele;
+						}
+					}
+				}
+			}
+		}
+	}
+	this->scale /= denom;
+	this->changed = true;
+	this->m_data = std::move(new_data);
+}
+
 int voxel_chunk::voxel::max_neighbors = 6;
+
+shader_program::ptr voxel_chunk::s_voxel_shader = nullptr;

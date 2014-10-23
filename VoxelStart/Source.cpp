@@ -28,11 +28,11 @@ struct Data
 	std::unique_ptr<voxel_chunk> voxel;
 	shader_program::ptr shader;
 
+	glm::mat4 world;
 	glm::mat4 transform;
 	glm::mat4 base;
-	glm::mat4 rotate;
 	GLfloat angle;
-	const int size = 400;
+	const int size = 50;
 	int elapsed;
 	glm::vec2 mouse;
 };
@@ -48,16 +48,18 @@ void idle()
 	glm::vec2 middle = glm::vec2{ 400, 400 };
 	auto diff = data->mouse - middle;
 	auto invert = glm::vec2{ -diff.y, diff.x };
-	data->rotate *= glm::rotate(glm::radians( change * .1f), glm::vec3(invert, 0));
+	//data->rotate *= glm::rotate(glm::radians( change * .1f), glm::vec3(invert, 0));
 
-	data->transform = data->base
-		* glm::translate(glm::vec3(0, 0, -data->size))
-		* glm::rotate(data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f })
-		* glm::scale(glm::vec3(0.75))
+	data->transform =
+		
+		 glm::translate(glm::vec3(0, 0, -data->size - 2))
+	//	 * glm::rotate(-data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f })
 		;
 
-	uniform(*data->shader, "transform", data->transform);
-	uniform(*data->shader, "world_transform", glm::mat4());
+	data->voxel->transform = glm::rotate(data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f });
+
+	data->voxel->set(!data->voxel->get(0, 0, 0), 0, 0, 0);
+	data->voxel->update();
 
 	glutPostRedisplay();
 }
@@ -66,7 +68,7 @@ void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	data->voxel->draw(GL_POINTS);
+	data->voxel->draw(data->base, data->transform);
 	glutSwapBuffers();
 }
 void mouse(int x, int y)
@@ -138,12 +140,12 @@ int main(int argc, char** argv)
 	float zFar = 600.0f;
 
 	data->shader = make_program({ vertex, geometry, fragment });
-	glUseProgram(data->shader->id);
+	glUseProgram(voxel_chunk::voxel_shader()->id);
 	data->base =
 		glm::perspective(glm::radians(60.0f), 1.0f, zNear, zFar)
 		;
 
-	uniform(*data->shader, "num_lights", 8);
+	uniform(*voxel_chunk::voxel_shader(), "num_lights", 8);
 
 	std::vector<glm::vec3> lights;
 
@@ -169,8 +171,27 @@ int main(int argc, char** argv)
 		}
 	}
 
-	uniform(*data->shader, "lights", lights);
+	//lights.push_back(glm::vec3(0, 0, data->size + 2));
 
+	//uniform(*voxel_chunk::voxel_shader(), "lights", lights);
+	//data->voxel->subdivide(3);
+	//for (int x = 0; x < data->size; x++)
+	//{
+	//	for (int y = 0; y < data->size; y++)
+	//	{
+	//		for (int z = 0; z < data->size; z++)
+	//		{
+	//			auto recentered_x = -x + data->size / 2;
+	//			auto recentered_y = -y + data->size / 2;
+	//			auto recentered_z = -z + data->size / 2;
+	//			if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
+	//				&& (z * x / (y ? y : 1)) <= data->size / 2
+	//				) // abs(x + y - z) <= 5
+
+	//				voxel_data.on(x, y, z);
+	//		}
+	//	}
+	//}
 
 
 	glPointSize(5);
