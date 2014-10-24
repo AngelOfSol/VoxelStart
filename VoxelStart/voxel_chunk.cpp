@@ -24,23 +24,24 @@ void voxel_chunk::update()
 	if (this->changed)
 	{
 		/*
-			if changed, start a thread to construct the contents of the new buffer
+			if changed, schedule an update a thread to construct the contents of the new buffer
 			, when that thread is done working, actually copy the buffer
 		*/
 
 
 
-		if (status == std::future_status::ready)
-		{
+		this->changed = false;
+	}
+	// if theres a new result, lets rebind
+	if (this->m_updates.new_result())
+	{
+		auto data = this->m_updates.get_result();
 
-		}
 		this->bind_buffers();
 
 		this->fill_buffers();
 
 		this->unbind_buffers();
-
-		this->changed = false;
 	}
 }
 
