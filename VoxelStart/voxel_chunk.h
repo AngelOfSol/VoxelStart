@@ -55,6 +55,8 @@ public:
 	double scale;
 
 	glm::mat4 transform;
+
+	int remaining_tasks() const { return this->m_updates.remaining(); };
 private:
 
 	static shader_program::ptr s_voxel_shader;
@@ -78,7 +80,7 @@ private:
 
 	struct update_result
 	{
-		std::unique_ptr<gl_data> data;
+		std::shared_ptr<gl_data> data;
 		int vertex_count;
 	};
 

@@ -10,6 +10,7 @@
 #include <glm/glm/gtc/quaternion.hpp>
 #include <chrono>
 #include <random>
+#include "timer.h"
 using std::unique_ptr;
 using std::make_unique;
 /*
@@ -32,9 +33,10 @@ struct Data
 	glm::mat4 transform;
 	glm::mat4 base;
 	GLfloat angle;
-	const int size = 50;
+	const int size = 150;
 	int elapsed;
 	glm::vec2 mouse;
+	timer time;
 };
 
 std::unique_ptr<Data> data;
@@ -59,8 +61,10 @@ void idle()
 	data->voxel->transform = glm::rotate(data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f });
 
 	data->voxel->set(!data->voxel->get(0, 0, 0), 0, 0, 0);
+	data->time.start();
 	data->voxel->update();
-
+	data->time.stop();
+	std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(data->time.duration()).count() << std::endl;
 	glutPostRedisplay();
 }
 

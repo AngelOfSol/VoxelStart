@@ -3,6 +3,8 @@
 #include "shader_data.h"
 #include "uniform.h"
 #include <initializer_list>
+#include "timer.h"
+#include <iostream>
 voxel_chunk::voxel_chunk(int width, int height, int depth)
 	: m_data(width, height, depth)
 	, scale(1)
@@ -10,6 +12,20 @@ voxel_chunk::voxel_chunk(int width, int height, int depth)
 	glGenVertexArrays(1, &this->m_vao);
 	glGenBuffers(1, &this->m_vbo);
 
+	this->bind_buffers();
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * width * height * depth * 6, NULL, GL_DYNAMIC_DRAW);
+	// let opengl know the first attribute is the position at 3 floats long starting at 0
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(0));
+	// let opengl know the second attribute is the position at 3 floats long starting at 3
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(GL_FLOAT)));
+
+	// enable the attributes
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	this->unbind_buffers();
 }
 
 
@@ -26,20 +42,90 @@ void voxel_chunk::update()
 		/*
 			if changed, schedule an update a thread to construct the contents of the new buffer
 			, when that thread is done working, actually copy the buffer
-		*/
+			*/
 
+		this->m_updates.schedule([](data_array data_copy)
+		{
+			update_result ret;
+			ret.data = std::make_shared<gl_data>();
+			ret.vertex_count = 0;
 
+			auto center_x = -data_copy.dim_size<0>() / 2.0f + 0.5f;
+			auto center_y = -data_copy.dim_size<1>() / 2.0f + 0.5f;
+			auto center_z = -data_copy.dim_size<2>() / 2.0f + 0.5f;
 
-		this->changed = false;
+			auto append = [&ret, center_x, center_y, center_z](int x, int y, int z)
+			{
+				ret.data->push_back(static_cast<GLfloat>(x + center_x));
+				ret.data->push_back(static_cast<GLfloat>(y + center_y));
+				ret.data->push_back(static_cast<GLfloat>(z + center_z));
+			};
+
+			for (int x = 0; x < data_copy.dim_size<0>(); x++)
+			{
+				auto x_plane = data_copy[x];
+				for (int y = 0; y < data_copy.dim_size<1>(); y++)
+				{
+					auto y_axis = x_plane[y];
+					for (int z = 0; z < data_copy.dim_size<2>(); z++)
+					{
+						auto& current_voxel = y_axis[z];
+						if (current_voxel.on && current_voxel.neighbors < voxel::max_neighbors)
+						{
+							// loop through x, y, z arrays and create faces
+
+							for (int i = 0; i < 2; i++)
+							{
+								if (!current_voxel.x[i])
+								{
+									append(x, y, z);
+									ret.data->emplace_back(static_cast<GLfloat>(i * 2 - 1));
+									ret.data->emplace_back(static_cast<GLfloat>(0));
+									ret.data->emplace_back(static_cast<GLfloat>(0));
+									ret.vertex_count++;
+								}
+							}
+							for (int i = 0; i < 2; i++)
+							{
+								if (!current_voxel.y[i])
+								{
+									append(x, y, z);
+									ret.data->emplace_back(static_cast<GLfloat>(0));
+									ret.data->emplace_back(static_cast<GLfloat>(i * 2 - 1));
+									ret.data->emplace_back(static_cast<GLfloat>(0));
+									ret.vertex_count++;
+								}
+							}
+
+							for (int i = 0; i < 2; i++)
+							{
+								if (!current_voxel.z[i])
+								{
+									append(x, y, z);
+									ret.data->emplace_back(static_cast<GLfloat>(0));
+									ret.data->emplace_back(static_cast<GLfloat>(0));
+									ret.data->emplace_back(static_cast<GLfloat>(i * 2 - 1));
+									ret.vertex_count++;
+								}
+							}
+						}
+					}
+				}
+			}
+			return ret;
+		}, this->m_data);
 	}
 	// if theres a new result, lets rebind
 	if (this->m_updates.new_result())
 	{
-		auto data = this->m_updates.get_result();
+		
+		auto& data = this->m_updates.get_result();
+
+		this->m_active = data.vertex_count;
 
 		this->bind_buffers();
 
-		this->fill_buffers();
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(GLfloat) * data.data->size(), data.data->data());
 
 		this->unbind_buffers();
 	}
@@ -263,6 +349,20 @@ void voxel_chunk::subdivide(int denom)
 	this->scale /= denom;
 	this->changed = true;
 	this->m_data = std::move(new_data);
+	this->bind_buffers();
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * this->width() * this->height() * this->depth() * 6, NULL, GL_DYNAMIC_DRAW);
+	// let opengl know the first attribute is the position at 3 floats long starting at 0
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(0));
+	// let opengl know the second attribute is the position at 3 floats long starting at 3
+
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(GL_FLOAT)));
+
+	// enable the attributes
+
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	this->unbind_buffers();
 }
 
 int voxel_chunk::voxel::max_neighbors = 6;

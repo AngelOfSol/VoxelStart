@@ -49,7 +49,7 @@ struct updater
 		this->m_tasks.emplace_back(std::async(std::launch::async, f, args...));
 	}
 
-	int remaining()
+	int remaining() const 
 	{
 
 		return this->m_tasks.size();
