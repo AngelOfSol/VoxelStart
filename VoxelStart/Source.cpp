@@ -114,7 +114,7 @@ int main(int argc, char** argv)
 
 	data = make_unique<Data>();
 	auto s = std::chrono::time_point_cast<std::chrono::nanoseconds>(clock.now());
-	def.seed(s.time_since_epoch().count());
+	def.seed((unsigned long)s.time_since_epoch().count());
 	std::uniform_int<> rand(0, data->size * 2);
 
 	std::uniform_int<> on_q(-2, 2);
@@ -130,11 +130,11 @@ int main(int argc, char** argv)
 			for (int z = 0; z < data->size; z++)
 			{
 				auto recentered_x = -x + data->size / 2;
-				auto recentered_y = -y + data->size / 2 + on_q(def);
+				auto recentered_y = -y + data->size / 2;
 				auto recentered_z = -z + data->size / 2;
 				if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
-					&& (z * x / (y ? y : 1)) <= data->size / 2
-					) // abs(x + y - z) <= 5
+					&& ((z + x) / (y ? y : 1)) <= data->size / 2
+					)
 					voxel_data.on(x, y, z);
 			}
 		}

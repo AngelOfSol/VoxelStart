@@ -13,18 +13,7 @@ voxel_chunk::voxel_chunk(int width, int height, int depth)
 	glGenBuffers(1, &this->m_vbo);
 
 	this->bind_buffers();
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * width * height * depth * 6, NULL, GL_DYNAMIC_DRAW);
-	// let opengl know the first attribute is the position at 3 floats long starting at 0
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(0));
-	// let opengl know the second attribute is the position at 3 floats long starting at 3
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(GL_FLOAT)));
-
-	// enable the attributes
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
+	this->fill_buffers();
 	this->unbind_buffers();
 }
 
@@ -209,75 +198,7 @@ void voxel_chunk::bind_buffers()
 
 void voxel_chunk::fill_buffers()
 {
-	std::vector<GLfloat> data;
-	int count = 0;
-
-	auto center_x = -this->m_data.dim_size<0>() / 2.0f + 0.5f;
-	auto center_y = -this->m_data.dim_size<1>() / 2.0f + 0.5f;
-	auto center_z = -this->m_data.dim_size<2>() / 2.0f + 0.5f;
-
-	auto append = [&data, center_x, center_y, center_z](int x, int y, int z)
-	{
-		data.push_back(static_cast<GLfloat>(x + center_x));
-		data.push_back(static_cast<GLfloat>(y + center_y));
-		data.push_back(static_cast<GLfloat>(z + center_z));
-	};
-
-	for (int x = 0; x < this->m_data.dim_size<0>(); x++)
-	{
-		auto x_plane = this->m_data[x];
-		for (int y = 0; y < this->m_data.dim_size<1>(); y++)
-		{
-			auto y_axis = x_plane[y];
-			for (int z = 0; z < this->m_data.dim_size<2>(); z++)
-			{
-				auto& current_voxel = y_axis[z];
-				if (current_voxel.on && current_voxel.neighbors < voxel::max_neighbors)
-				{
-					// loop through x, y, z arrays and create faces
-
-					for (int i = 0; i < 2; i++)
-					{
-						if (!current_voxel.x[i])
-						{
-							append(x, y, z);
-							data.emplace_back(static_cast<GLfloat>(i * 2 - 1));
-							data.emplace_back(static_cast<GLfloat>(0));
-							data.emplace_back(static_cast<GLfloat>(0));
-							count++;
-						}
-					}
-					for (int i = 0; i < 2; i++)
-					{
-						if (!current_voxel.y[i])
-						{
-							append(x, y, z);
-							data.emplace_back(static_cast<GLfloat>(0));
-							data.emplace_back(static_cast<GLfloat>(i * 2 - 1));
-							data.emplace_back(static_cast<GLfloat>(0));
-							count++;
-						}
-					}
-
-					for (int i = 0; i < 2; i++)
-					{
-						if (!current_voxel.z[i])
-						{
-							append(x, y, z);
-							data.emplace_back(static_cast<GLfloat>(0));
-							data.emplace_back(static_cast<GLfloat>(0));
-							data.emplace_back(static_cast<GLfloat>(i * 2 - 1));
-							count++;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	this->m_active = count;
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * data.size(), data.data(), GL_STATIC_DRAW);
-
+	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * this->width() * this->height() * this->depth() * 6, NULL, GL_DYNAMIC_DRAW);
 	// let opengl know the first attribute is the position at 3 floats long starting at 0
 
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(0));
@@ -351,18 +272,7 @@ void voxel_chunk::subdivide(int denom)
 	this->changed = true;
 	this->m_data = std::move(new_data);
 	this->bind_buffers();
-	glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * this->width() * this->height() * this->depth() * 6, NULL, GL_DYNAMIC_DRAW);
-	// let opengl know the first attribute is the position at 3 floats long starting at 0
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(0));
-	// let opengl know the second attribute is the position at 3 floats long starting at 3
-
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(GL_FLOAT)));
-
-	// enable the attributes
-
-	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
+	this->fill_buffers();
 	this->unbind_buffers();
 }
 
