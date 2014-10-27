@@ -114,6 +114,7 @@ void voxel_chunk::update()
 			}
 			return ret;
 		}, this->m_data);
+		this->changed = false;
 	}
 	// if theres a new result, lets rebind
 	if (this->m_updates.new_result())

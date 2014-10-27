@@ -33,7 +33,7 @@ struct Data
 	glm::mat4 transform;
 	glm::mat4 base;
 	GLfloat angle;
-	const int size = 150;
+	const int size = 100;
 	int elapsed;
 	glm::vec2 mouse;
 	timer time;
@@ -55,12 +55,12 @@ void idle()
 	data->transform =
 		
 		 glm::translate(glm::vec3(0, 0, -data->size - 2))
-	//	 * glm::rotate(-data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f })
+//		 * glm::rotate(data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f })
 		;
 
 	data->voxel->transform = glm::rotate(data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f });
 
-	data->voxel->set(!data->voxel->get(0, 0, 0), 0, 0, 0);
+	//data->voxel->set(!data->voxel->get(0, 0, 0), 0, 0, 0);
 	data->time.start();
 	data->voxel->update();
 	data->time.stop();
@@ -72,6 +72,8 @@ void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	data->voxel->draw(data->base, data->transform);
+	data->voxel->transform = glm::translate(glm::vec3{ data->size / 2, 0, 0 }) * data->voxel->transform;// * glm::rotate(data->angle, glm::vec3{ 0.0f, 1.0f, 1.0f });
 	data->voxel->draw(data->base, data->transform);
 	glutSwapBuffers();
 }
@@ -104,9 +106,20 @@ int main(int argc, char** argv)
 	{
 		return 1;
 	}
-	glClearColor(0.1f, 0.2f, 0.3f, 1.0f);
+	glClearColor(0.3f, 0.2f, 0.3f, 1.0f);
+
+	auto clock = std::chrono::steady_clock();
+
+	std::default_random_engine def;
 
 	data = make_unique<Data>();
+	auto s = std::chrono::time_point_cast<std::chrono::nanoseconds>(clock.now());
+	def.seed(s.time_since_epoch().count());
+	std::uniform_int<> rand(0, data->size * 2);
+
+	std::uniform_int<> on_q(-2, 2);
+
+
 	data->voxel = make_unique<voxel_chunk>(data->size, data->size, data->size);
 	data->angle = 0.0f;
 	auto& voxel_data = *data->voxel;
@@ -117,18 +130,15 @@ int main(int argc, char** argv)
 			for (int z = 0; z < data->size; z++)
 			{
 				auto recentered_x = -x + data->size / 2;
-				auto recentered_y = -y + data->size / 2;
+				auto recentered_y = -y + data->size / 2 + on_q(def);
 				auto recentered_z = -z + data->size / 2;
 				if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
 					&& (z * x / (y ? y : 1)) <= data->size / 2
 					) // abs(x + y - z) <= 5
-				
 					voxel_data.on(x, y, z);
 			}
 		}
 	}
-
-	auto clock = std::chrono::steady_clock();
 
 	voxel_data.get(0, 0, 0);
 	auto begin = clock.now();
@@ -153,11 +163,6 @@ int main(int argc, char** argv)
 
 	std::vector<glm::vec3> lights;
 
-	std::default_random_engine def;
-
-	auto s = std::chrono::time_point_cast<std::chrono::nanoseconds>(clock.now());
-	def.seed(s.time_since_epoch().count());
-	std::uniform_int<> rand(0, data->size * 2);
 
 	for (int i = -1; i < 2; i += 2)
 	{
