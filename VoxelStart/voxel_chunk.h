@@ -38,23 +38,46 @@ public:
 
 	bool changed;
 	void update();
-	void draw(glm::mat4 perspective, glm::mat4 view_port);
-	
+	void draw(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform = glm::mat4());
+
 	void on(int x, int y, int z);
 	void off(int x, int y, int z);
 	void set(bool b, int x, int y, int z);
 	bool get(int x, int y, int z)  const;
 
+	template <typename Vector>
+	void on(Vector v)
+	{
+		this->on(v.x, v.y, v.z);
+	}
+	template <typename Vector>
+	void off(Vector v)
+	{
+		this->off(v.x, v.y, v.z);
+	}
+	template <typename Vector>
+	void set(bool b, Vector v)
+	{
+		this->set(b, v.x, v.y, v.z);
+	}
+	template <typename Vector>
+	bool get(Vector v) const
+	{
+		return this->get(v.x, v.y, v.z);
+	}
+
 	int width() const { return this->m_data.dim_size<0>(); };
 	int height() const { return this->m_data.dim_size<1>(); };
 	int depth() const { return this->m_data.dim_size<2>(); };
+
+	glm::vec3 dimensions() const { return glm::vec3{ this->width(), this->height(), this->depth() }; };
 
 	void subdivide(int denom);
 	static const shader_program::ptr voxel_shader();
 
 	double scale;
 
-	glm::mat4 transform;
+	glm::mat4 model_transform;
 
 	int remaining_tasks() const { return this->m_updates.remaining(); };
 private:
@@ -67,7 +90,7 @@ private:
 
 	void unbind_buffers();
 
-	void set_uniforms(glm::mat4 perspective, glm::mat4 view_port);
+	void set_uniforms(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform);
 
 
 

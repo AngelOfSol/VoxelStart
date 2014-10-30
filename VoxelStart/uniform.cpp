@@ -15,6 +15,13 @@ void uniform(const shader_program& program, const char* name, int data)
 }
 
 template <>
+void uniform(const shader_program& program, const char* name, unsigned int data)
+{
+	auto loc = glGetUniformLocation(program.id, name);
+	glUniform1i(loc, data);
+}
+
+template <>
 void uniform(const shader_program& program, const char* name, glm::vec3 data)
 {
 	auto loc = glGetUniformLocation(program.id, name);

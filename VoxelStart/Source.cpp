@@ -33,13 +33,94 @@ struct Data
 	glm::mat4 transform;
 	glm::mat4 base;
 	GLfloat angle;
-	const int size = 100;
+	const int size = 50;
+	const float speed = 0.1;
 	int elapsed;
 	glm::vec2 mouse;
 	timer time;
+
+	float dx;
+	float dy;
+	float dz;
+
+	float drx;
+	float dry;
 };
 
 std::unique_ptr<Data> data;
+
+void keypress(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+	case 'a':
+		data->dx = data->speed;
+		break;
+	case 'd':
+		data->dx = -data->speed;
+		break;
+	case 'e':
+		data->dy = -data->speed;
+		break;
+	case 'q':
+		data->dy = data->speed;
+		break;
+	case 'w':
+		data->dz = data->speed;
+		break;
+	case 's':
+		data->dz = -data->speed;
+		break;
+	case 'j':
+		data->dry = -data->speed;
+		break;
+	case 'l':
+		data->dry = data->speed;
+		break;
+	case 'i':
+		data->drx = -data->speed;
+		break;
+	case 'k':
+		data->drx = data->speed;
+		break;
+	}
+}
+void key_up(unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+	case 'a':
+		data->dx = 0.0;
+		break;
+	case 'd':
+		data->dx = 0.0;
+		break;
+	case 'e':
+		data->dy = 0.0;
+		break;
+	case 'q':
+		data->dy = 0.0;
+		break;
+	case 'w':
+		data->dz = 0.0;
+		break;
+	case 's':
+		data->dz = 0.0;
+		break;
+	case 'j':
+		data->dry = 0.0;
+		break;
+	case 'l':
+		data->dry = 0.0;
+		break;
+	case 'i':
+		data->drx = 0.0;
+		break;
+	case 'k':
+		data->drx = 0.0;
+		break;
+	}
+}
 
 void idle()
 {
@@ -50,21 +131,15 @@ void idle()
 	glm::vec2 middle = glm::vec2{ 400, 400 };
 	auto diff = data->mouse - middle;
 	auto invert = glm::vec2{ -diff.y, diff.x };
-	//data->rotate *= glm::rotate(glm::radians( change * .1f), glm::vec3(invert, 0));
 
-	data->transform =
-		
-		 glm::translate(glm::vec3(0, 0, -data->size - 2))
-//		 * glm::rotate(data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f })
-		;
+	data->transform = glm::rotate(change * data->drx * 0.01f, glm::vec3{ 1, 0, 0 }) * data->transform;
+	data->transform = glm::rotate(change * data->dry * 0.01f, glm::vec3{ 0, 1, 0 })* data->transform;
+	data->transform = glm::translate(glm::vec3{ data->dx, data->dy, data->dz } *(float)change) * data->transform;
 
-	data->voxel->transform = glm::rotate(data->angle, glm::vec3{ 1.0f, 0.0f, 0.0f });
-
-	//data->voxel->set(!data->voxel->get(0, 0, 0), 0, 0, 0);
 	data->time.start();
 	data->voxel->update();
 	data->time.stop();
-	std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(data->time.duration()).count() << std::endl;
+	//std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(data->time.duration()).count() << std::endl;
 	glutPostRedisplay();
 }
 
@@ -73,8 +148,8 @@ void draw()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	data->voxel->draw(data->base, data->transform);
-	data->voxel->transform = glm::translate(glm::vec3{ data->size / 2, 0, 0 }) * data->voxel->transform;// * glm::rotate(data->angle, glm::vec3{ 0.0f, 1.0f, 1.0f });
-	data->voxel->draw(data->base, data->transform);
+	//data->voxel->transform = glm::translate(glm::vec3{ data->size / 2, 0, 0 }) * data->voxel->transform;// * glm::rotate(data->angle, glm::vec3{ 0.0f, 1.0f, 1.0f });
+	data->voxel->draw(data->base, data->transform, glm::translate(glm::vec3{ data->size / 2, 0, 0 }));
 	glutSwapBuffers();
 }
 void mouse(int x, int y)
@@ -114,11 +189,8 @@ int main(int argc, char** argv)
 
 	data = make_unique<Data>();
 	auto s = std::chrono::time_point_cast<std::chrono::nanoseconds>(clock.now());
-	def.seed((unsigned long)s.time_since_epoch().count());
+	def.seed(static_cast<unsigned long>(s.time_since_epoch().count()));
 	std::uniform_int<> rand(0, data->size * 2);
-
-	std::uniform_int<> on_q(-2, 2);
-
 
 	data->voxel = make_unique<voxel_chunk>(data->size, data->size, data->size);
 	data->angle = 0.0f;
@@ -133,7 +205,7 @@ int main(int argc, char** argv)
 				auto recentered_y = -y + data->size / 2;
 				auto recentered_z = -z + data->size / 2;
 				if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
-					&& ((z + x) / (y ? y : 1)) <= data->size / 2
+					&& ((z * x) / (y ? y : 1)) <= data->size / 2
 					)
 					voxel_data.on(x, y, z);
 			}
@@ -158,8 +230,10 @@ int main(int argc, char** argv)
 	data->base =
 		glm::perspective(glm::radians(60.0f), 1.0f, zNear, zFar)
 		;
-
-	uniform(*voxel_chunk::voxel_shader(), "num_lights", 8);
+	data->dx = 0;
+	data->dy = 0;
+	data->drx = 0;
+	data->dry = 0;
 
 	std::vector<glm::vec3> lights;
 
@@ -179,10 +253,11 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+	lights.push_back(glm::vec3(0, 0, data->size + 2));
+	uniform(*voxel_chunk::voxel_shader(), "lights", lights);
+	uniform(*voxel_chunk::voxel_shader(), "num_lights", lights.size());
 
-	//lights.push_back(glm::vec3(0, 0, data->size + 2));
-
-	//uniform(*voxel_chunk::voxel_shader(), "lights", lights);
+	//
 	//data->voxel->subdivide(3);
 	//for (int x = 0; x < data->size; x++)
 	//{
@@ -201,12 +276,9 @@ int main(int argc, char** argv)
 	//		}
 	//	}
 	//}
+	data->transform = glm::translate(glm::vec3(0, 0, -data->size - 2));
 
 
-	glPointSize(5);
-	//glUseProgram(0);
-
-	//glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);
 	glDepthFunc(GL_LESS);
@@ -216,6 +288,8 @@ int main(int argc, char** argv)
 	glutIdleFunc(&idle);
 	glutDisplayFunc(&draw);
 
+	glutKeyboardFunc(&keypress);
+	glutKeyboardUpFunc(&key_up);
 	glutPassiveMotionFunc(mouse);
 
 	data->elapsed = glutGet(GLUT_ELAPSED_TIME);

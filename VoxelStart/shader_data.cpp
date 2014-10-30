@@ -57,8 +57,8 @@ in vec4 gNormal[];
 out vec4 fNormal;
 out vec4 camera_position;
 
-uniform mat4 camera_transform;
-uniform mat4 transform;
+uniform mat4 mvp_transform;
+uniform mat4 model_transform;
 uniform mat4 normal_transform;
 
 layout(points) in;
@@ -76,24 +76,24 @@ void main()
 	
 	vec4 actual_normal = normal_transform * normal;
 
-	gl_Position = transform * bottom_left_vert;
-	camera_position = camera_transform * bottom_left_vert;
+	gl_Position = mvp_transform * bottom_left_vert;
+	camera_position = model_transform * bottom_left_vert;
 	fNormal = actual_normal;
 	EmitVertex();
 	
-	gl_Position = transform * top_left_vert;
-	camera_position = camera_transform * top_left_vert;
+	gl_Position = mvp_transform * top_left_vert;
+	camera_position = model_transform * top_left_vert;
 	fNormal = actual_normal;
 	EmitVertex();
 	
-	gl_Position = transform * bottom_right_vert;
-	camera_position = camera_transform * bottom_right_vert;
+	gl_Position = mvp_transform * bottom_right_vert;
+	camera_position = model_transform * bottom_right_vert;
 	fNormal = actual_normal;
 	EmitVertex();
 	
 
-	gl_Position = transform * top_right_vert;
-	camera_position = camera_transform * top_right_vert;
+	gl_Position = mvp_transform * top_right_vert;
+	camera_position = model_transform * top_right_vert;
 	fNormal = actual_normal;
 	EmitVertex();
 	
@@ -107,16 +107,15 @@ void main()
 std::string fragment = R"(
 #version 410
 
-uniform vec3 lights[12];
+uniform vec3 lights[100];
 uniform int num_lights;
-uniform mat4 view_transform;
 
 in vec4 fNormal;
 in vec4 camera_position;
 
 float calc_light(vec4 light)
 {
-	vec4 diff = view_transform * light - camera_position;
+	vec4 diff = light - camera_position;
 	float attenuation = length(diff);
 	float index_of_refrac = (dot(fNormal, normalize(diff)), 0 , 1);
 

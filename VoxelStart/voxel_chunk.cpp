@@ -121,10 +121,10 @@ void voxel_chunk::update()
 	}
 }
 
-void voxel_chunk::draw(glm::mat4 perspective, glm::mat4 view_port)
+void voxel_chunk::draw(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform)
 {
 	this->bind_buffers();
-	this->set_uniforms(perspective, view_port);
+	this->set_uniforms(perspective, view_port, extra_model_transform);
 	glDrawArrays(GL_POINTS, 0, this->m_active);
 	this->unbind_buffers();
 }
@@ -219,14 +219,15 @@ void voxel_chunk::unbind_buffers()
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void voxel_chunk::set_uniforms(glm::mat4 perspective, glm::mat4 view_port)
+void voxel_chunk::set_uniforms(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform)
 {
 	glUseProgram(voxel_chunk::voxel_shader()->id);
-	auto modelview = view_port * transform * glm::scale(glm::vec3(this->scale));
-	uniform(*voxel_chunk::voxel_shader(), "transform", perspective * modelview);
-	uniform(*voxel_chunk::voxel_shader(), "camera_transform", modelview);
-	uniform(*voxel_chunk::voxel_shader(), "normal_transform", glm::transpose(glm::inverse(modelview)));
-	uniform(*voxel_chunk::voxel_shader(), "view_transform", view_port);
+
+	auto model = extra_model_transform * this->model_transform * glm::scale(glm::vec3(this->scale));
+	auto mvp = perspective * view_port * model;
+	uniform(*voxel_chunk::voxel_shader(), "mvp_transform", mvp);
+	uniform(*voxel_chunk::voxel_shader(), "model_transform", model);
+	uniform(*voxel_chunk::voxel_shader(), "normal_transform", glm::transpose(glm::inverse(model)));
 }
 const shader_program::ptr voxel_chunk::voxel_shader()
 {
