@@ -11,6 +11,7 @@
 #include <chrono>
 #include <random>
 #include "timer.h"
+#include "cut_voxel.h"
 using std::unique_ptr;
 using std::make_unique;
 /*
@@ -26,15 +27,16 @@ create voxel_chunk holder
 */
 struct Data
 {
-	std::unique_ptr<voxel_chunk> voxel;
+	std::unique_ptr<voxel_chunk> voxel_cube;
+	std::unique_ptr<voxel_chunk> voxel_cut;
 	shader_program::ptr shader;
 
 	glm::mat4 world;
 	glm::mat4 transform;
 	glm::mat4 base;
 	GLfloat angle;
-	const int size = 50;
-	const float speed = 0.1;
+	const int size = 100;
+	const float speed = 0.1f;
 	int elapsed;
 	glm::vec2 mouse;
 	timer time;
@@ -137,7 +139,8 @@ void idle()
 	data->transform = glm::translate(glm::vec3{ data->dx, data->dy, data->dz } *(float)change) * data->transform;
 
 	data->time.start();
-	data->voxel->update();
+	data->voxel_cut->update();
+	data->voxel_cube->update();
 	data->time.stop();
 	//std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(data->time.duration()).count() << std::endl;
 	glutPostRedisplay();
@@ -147,9 +150,9 @@ void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	data->voxel->draw(data->base, data->transform);
+	data->voxel_cube->draw(data->base, data->transform);
 	//data->voxel->transform = glm::translate(glm::vec3{ data->size / 2, 0, 0 }) * data->voxel->transform;// * glm::rotate(data->angle, glm::vec3{ 0.0f, 1.0f, 1.0f });
-	data->voxel->draw(data->base, data->transform, glm::translate(glm::vec3{ data->size / 2, 0, 0 }));
+	data->voxel_cut->draw(data->base, data->transform, glm::translate(glm::vec3{ data->size / 2, 0, 0 }));
 	glutSwapBuffers();
 }
 void mouse(int x, int y)
@@ -192,9 +195,10 @@ int main(int argc, char** argv)
 	def.seed(static_cast<unsigned long>(s.time_since_epoch().count()));
 	std::uniform_int<> rand(0, data->size * 2);
 
-	data->voxel = make_unique<voxel_chunk>(data->size, data->size, data->size);
+	data->voxel_cut = make_unique<voxel_chunk>(data->size, data->size, data->size);
+	data->voxel_cube = make_unique<voxel_chunk>(data->size, data->size, data->size);
 	data->angle = 0.0f;
-	auto& voxel_data = *data->voxel;
+	auto& voxel_data = *data->voxel_cut;
 	for (int x = 0; x < data->size; x++)
 	{
 		for (int y = 0; y < data->size; y++)
@@ -205,12 +209,20 @@ int main(int argc, char** argv)
 				auto recentered_y = -y + data->size / 2;
 				auto recentered_z = -z + data->size / 2;
 				if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
-					&& ((z * x) / (y ? y : 1)) <= data->size / 2
+					//&& ((z * x) / (y ? y : 1)) <= data->size / 2
 					)
+				{
+				
 					voxel_data.on(x, y, z);
+					data->voxel_cube->on(x, y, z);
+				}
+
 			}
 		}
 	}
+
+	difference(glm::vec3(), *data->voxel_cut, glm::vec3{ data->size / 2, 0, 0 }, *data->voxel_cube);
+	difference(glm::vec3{ data->size / 2, 0, 0 }, *data->voxel_cut, glm::vec3(), *data->voxel_cube);
 
 	voxel_data.get(0, 0, 0);
 	auto begin = clock.now();

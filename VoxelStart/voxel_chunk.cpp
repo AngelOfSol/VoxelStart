@@ -128,15 +128,15 @@ void voxel_chunk::draw(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 ext
 	glDrawArrays(GL_POINTS, 0, this->m_active);
 	this->unbind_buffers();
 }
-void voxel_chunk::on(int x, int y, int z)
+void voxel_chunk::on(unsigned int x, unsigned int y, unsigned int z)
 {
 	this->set(true, x, y, z);
 }
-void voxel_chunk::off(int x, int y, int z)
+void voxel_chunk::off(unsigned int x, unsigned int y, unsigned int z)
 {
 	this->set(false, x, y, z);
 }
-void voxel_chunk::set(bool b, int x, int y, int z)
+void voxel_chunk::set(bool b, unsigned int x, unsigned int y, unsigned int z)
 {
 	int change = b ? 1 : -1;
 
@@ -184,7 +184,7 @@ void voxel_chunk::set(bool b, int x, int y, int z)
 
 	}
 }
-bool voxel_chunk::get(int x, int y, int z) const
+bool voxel_chunk::get(unsigned int x, unsigned int y, unsigned int z) const
 {
 	return this->m_data[x][y][z].on;
 }
@@ -241,7 +241,7 @@ const shader_program::ptr voxel_chunk::voxel_shader()
 	}
 	return voxel_chunk::s_voxel_shader;
 }
-void voxel_chunk::subdivide(int denom)
+void voxel_chunk::subdivide(unsigned int denom)
 {
 	data_array new_data(this->width() * denom, this->height() * denom, this->depth() * denom);
 	for (int i = 0; i < this->width(); i++)
@@ -254,13 +254,13 @@ void voxel_chunk::subdivide(int denom)
 			{
 				auto ele = line[k];
 
-				for (int copy_to_x = i * denom; copy_to_x < (i + 1) * denom; copy_to_x++)
+				for (unsigned int copy_to_x = i * denom; copy_to_x < (i + 1) * denom; copy_to_x++)
 				{
 					auto copy_plane = new_data[copy_to_x];
-					for (int copy_to_y = j * denom; copy_to_y < (j + 1) * denom; copy_to_y++)
+					for (unsigned int copy_to_y = j * denom; copy_to_y < (j + 1) * denom; copy_to_y++)
 					{
 						auto copy_line = copy_plane[copy_to_y];
-						for (int copy_to_z = k * denom; copy_to_z < (k + 1) * denom; copy_to_z++)
+						for (unsigned int copy_to_z = k * denom; copy_to_z < (k + 1) * denom; copy_to_z++)
 						{
 							copy_line[copy_to_z] = ele;
 						}

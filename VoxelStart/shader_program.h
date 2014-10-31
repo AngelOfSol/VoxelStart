@@ -9,6 +9,7 @@ public:
 
 	shader_program(void);
 	shader_program(const shader_program&) = delete;
+	shader_program& operator =(const shader_program&) = delete;
 	~shader_program(void);
 
 	const GLuint id;

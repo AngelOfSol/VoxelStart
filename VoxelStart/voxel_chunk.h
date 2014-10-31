@@ -40,30 +40,30 @@ public:
 	void update();
 	void draw(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform = glm::mat4());
 
-	void on(int x, int y, int z);
-	void off(int x, int y, int z);
-	void set(bool b, int x, int y, int z);
-	bool get(int x, int y, int z)  const;
+	void on(unsigned int x, unsigned int y, unsigned int z);
+	void off(unsigned int x, unsigned int y, unsigned int z);
+	void set(bool b, unsigned int x, unsigned int y, unsigned int z);
+	bool get(unsigned int x, unsigned int y, unsigned int z)  const;
 
 	template <typename Vector>
 	void on(Vector v)
 	{
-		this->on(v.x, v.y, v.z);
+		this->on(static_cast<unsigned int>(v.x), static_cast<unsigned int>(v.y), static_cast<unsigned int>(v.z));
 	}
 	template <typename Vector>
 	void off(Vector v)
 	{
-		this->off(v.x, v.y, v.z);
+		this->off(static_cast<unsigned int>(v.x), static_cast<unsigned int>(v.y), static_cast<unsigned int>(v.z));
 	}
 	template <typename Vector>
 	void set(bool b, Vector v)
 	{
-		this->set(b, v.x, v.y, v.z);
+		this->set(b, static_cast<unsigned int>(v.x), static_cast<unsigned int>(v.y), static_cast<unsigned int>(v.z));
 	}
 	template <typename Vector>
 	bool get(Vector v) const
 	{
-		return this->get(v.x, v.y, v.z);
+		return this->get(static_cast<unsigned int>(v.x), static_cast<unsigned int>(v.y), static_cast<unsigned int>(v.z));
 	}
 
 	int width() const { return this->m_data.dim_size<0>(); };
@@ -72,10 +72,10 @@ public:
 
 	glm::vec3 dimensions() const { return glm::vec3{ this->width(), this->height(), this->depth() }; };
 
-	void subdivide(int denom);
+	void subdivide(unsigned int denom);
 	static const shader_program::ptr voxel_shader();
 
-	double scale;
+	float scale;
 
 	glm::mat4 model_transform;
 

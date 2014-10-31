@@ -79,12 +79,13 @@
     <ClCompile Include="shader_data.cpp" />
     <ClCompile Include="shader_program.cpp" />
     <ClCompile Include="Source.cpp" />
-    <ClCompile Include="Source1.cpp" />
+    <ClCompile Include="cut_voxel.cpp" />
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="uniform.cpp" />
     <ClCompile Include="voxel_chunk.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="cut_voxel.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="gl.h" />
     <ClInclude Include="nd_array.h" />
