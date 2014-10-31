@@ -15,13 +15,6 @@
 using std::unique_ptr;
 using std::make_unique;
 /*
-Create subdivide,
-	-a subdivide size
-	-a render size
-
-	-figure out how to center properly
-
-scale the models properly,
 create voxel_chunk holder
 
 */
@@ -35,7 +28,7 @@ struct Data
 	glm::mat4 transform;
 	glm::mat4 base;
 	GLfloat angle;
-	const int size = 100;
+	const int size = 80;
 	const float speed = 0.1f;
 	int elapsed;
 	glm::vec2 mouse;
@@ -197,7 +190,7 @@ int main(int argc, char** argv)
 
 	data->voxel_cut = make_unique<voxel_chunk>(data->size, data->size, data->size);
 	data->voxel_cube = make_unique<voxel_chunk>(data->size, data->size, data->size);
-	data->angle = 0.0f;
+	data->angle = 0.0f;	
 	auto& voxel_data = *data->voxel_cut;
 	for (int x = 0; x < data->size; x++)
 	{
@@ -209,7 +202,7 @@ int main(int argc, char** argv)
 				auto recentered_y = -y + data->size / 2;
 				auto recentered_z = -z + data->size / 2;
 				if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
-					//&& ((z * x) / (y ? y : 1)) <= data->size / 2
+					&& ((z * x) / (y ? y : 1)) <= data->size / 2
 					)
 				{
 				
@@ -221,8 +214,8 @@ int main(int argc, char** argv)
 		}
 	}
 
-	difference(glm::vec3(), *data->voxel_cut, glm::vec3{ data->size / 2, 0, 0 }, *data->voxel_cube);
-	difference(glm::vec3{ data->size / 2, 0, 0 }, *data->voxel_cut, glm::vec3(), *data->voxel_cube);
+	difference(glm::vec3(), *data->voxel_cube, glm::vec3{ data->size / 2, 0, 0 }, *data->voxel_cut);
+	difference(glm::vec3{ data->size / 2, data->size / 2, 0 }, *data->voxel_cube, glm::vec3(), *data->voxel_cut);
 
 	voxel_data.get(0, 0, 0);
 	auto begin = clock.now();
@@ -269,25 +262,7 @@ int main(int argc, char** argv)
 	uniform(*voxel_chunk::voxel_shader(), "lights", lights);
 	uniform(*voxel_chunk::voxel_shader(), "num_lights", lights.size());
 
-	//
-	//data->voxel->subdivide(3);
-	//for (int x = 0; x < data->size; x++)
-	//{
-	//	for (int y = 0; y < data->size; y++)
-	//	{
-	//		for (int z = 0; z < data->size; z++)
-	//		{
-	//			auto recentered_x = -x + data->size / 2;
-	//			auto recentered_y = -y + data->size / 2;
-	//			auto recentered_z = -z + data->size / 2;
-	//			if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
-	//				&& (z * x / (y ? y : 1)) <= data->size / 2
-	//				) // abs(x + y - z) <= 5
 
-	//				voxel_data.on(x, y, z);
-	//		}
-	//	}
-	//}
 	data->transform = glm::translate(glm::vec3(0, 0, -data->size - 2));
 
 
