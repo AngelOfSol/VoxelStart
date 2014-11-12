@@ -15,6 +15,8 @@ voxel_chunk::voxel_chunk(int width, int height, int depth)
 	this->bind_buffers();
 	this->fill_buffers();
 	this->unbind_buffers();
+
+	
 }
 
 
@@ -32,7 +34,6 @@ void voxel_chunk::update()
 			if changed, schedule an update a thread to construct the contents of the new buffer
 			, when that thread is done working, actually copy the buffer
 			*/
-
 		this->m_updates.schedule([](data_array data_copy)
 		{
 			update_result ret;
@@ -121,7 +122,7 @@ void voxel_chunk::update()
 	}
 }
 
-void voxel_chunk::draw(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform)
+void voxel_chunk::draw(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform) const
 {
 	this->bind_buffers();
 	this->set_uniforms(perspective, view_port, extra_model_transform);
@@ -139,7 +140,6 @@ void voxel_chunk::off(unsigned int x, unsigned int y, unsigned int z)
 void voxel_chunk::set(bool b, unsigned int x, unsigned int y, unsigned int z)
 {
 	int change = b ? 1 : -1;
-
 	auto& vox_ref = this->m_data[x][y][z];
 	if (vox_ref.on != b)
 	{
@@ -190,7 +190,7 @@ bool voxel_chunk::get(unsigned int x, unsigned int y, unsigned int z) const
 }
 
 
-void voxel_chunk::bind_buffers()
+void voxel_chunk::bind_buffers() const
 {
 	glBindVertexArray(this->m_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, this->m_vbo);
@@ -213,13 +213,13 @@ void voxel_chunk::fill_buffers()
 
 }
 
-void voxel_chunk::unbind_buffers()
+void voxel_chunk::unbind_buffers() const
 {
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-void voxel_chunk::set_uniforms(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform)
+void voxel_chunk::set_uniforms(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform) const
 {
 	glUseProgram(voxel_chunk::voxel_shader()->id);
 
@@ -275,6 +275,17 @@ void voxel_chunk::subdivide(unsigned int denom)
 	this->bind_buffers();
 	this->fill_buffers();
 	this->unbind_buffers();
+}
+void voxel_chunk::clear_and_resize()
+{
+	auto inverse_scale = 1.0 / this->width();
+	this->scale = static_cast<float>(inverse_scale * this->scale);
+	this->changed = true;
+	this->m_data = data_array(1, 1, 1);
+	this->bind_buffers();
+	this->fill_buffers();
+	this->unbind_buffers();
+
 }
 
 int voxel_chunk::voxel::max_neighbors = 6;

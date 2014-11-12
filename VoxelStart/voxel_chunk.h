@@ -33,12 +33,17 @@ class voxel_chunk
 public:
 	using data_array = nd_array<voxel, 3>;
 	using gl_data = std::vector<GLfloat>;
+	voxel_chunk()
+		: voxel_chunk(1, 1, 1)
+	{
+
+	}
 	voxel_chunk(int width, int height, int depth);
 	~voxel_chunk();
 
 	bool changed;
 	void update();
-	void draw(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform = glm::mat4());
+	void draw(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform = glm::mat4()) const;
 
 	void on(unsigned int x, unsigned int y, unsigned int z);
 	void off(unsigned int x, unsigned int y, unsigned int z);
@@ -70,6 +75,8 @@ public:
 	int height() const { return this->m_data.dim_size<1>(); };
 	int depth() const { return this->m_data.dim_size<2>(); };
 
+	void clear_and_resize();
+
 	glm::vec3 dimensions() const { return glm::vec3{ this->width(), this->height(), this->depth() }; };
 
 	void subdivide(unsigned int denom);
@@ -84,13 +91,13 @@ private:
 
 	static shader_program::ptr s_voxel_shader;
 
-	void bind_buffers();
+	void bind_buffers() const;
 
 	void fill_buffers();
 
-	void unbind_buffers();
+	void unbind_buffers() const;
 
-	void set_uniforms(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform);
+	void set_uniforms(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform) const;
 
 
 

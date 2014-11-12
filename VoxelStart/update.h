@@ -8,6 +8,13 @@ bool is_ready(const std::future<T>& target)
 }
 
 
+template <typename T>
+bool is_ready(const std::shared_future<T>& target)
+{
+	return target.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+}
+
+
 template <typename ResultType>
 struct updater
 {
@@ -55,5 +62,5 @@ struct updater
 		return this->m_tasks.size();
 	}
 private:
-	std::vector<std::future<ResultType>> m_tasks;
+	std::vector<std::shared_future<ResultType>> m_tasks;
 };

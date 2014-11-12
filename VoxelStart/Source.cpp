@@ -10,6 +10,7 @@
 #include <glm/glm/gtc/quaternion.hpp>
 #include <chrono>
 #include <random>
+#include "voxel_model.h"
 #include "timer.h"
 #include "cut_voxel.h"
 using std::unique_ptr;
@@ -22,13 +23,14 @@ struct Data
 {
 	std::unique_ptr<voxel_chunk> voxel_cube;
 	std::unique_ptr<voxel_chunk> voxel_cut;
+	std::unique_ptr<voxel_model> voxel_model;
 	shader_program::ptr shader;
 
 	glm::mat4 world;
 	glm::mat4 transform;
 	glm::mat4 base;
 	GLfloat angle;
-	const int size = 80;
+	const int size = 100;
 	const float speed = 0.1f;
 	int elapsed;
 	glm::vec2 mouse;
@@ -131,10 +133,12 @@ void idle()
 	data->transform = glm::rotate(change * data->dry * 0.01f, glm::vec3{ 0, 1, 0 })* data->transform;
 	data->transform = glm::translate(glm::vec3{ data->dx, data->dy, data->dz } *(float)change) * data->transform;
 
-	data->time.start();
+
+	data->voxel_model->update();
+//	data->time.start();
 	data->voxel_cut->update();
 	data->voxel_cube->update();
-	data->time.stop();
+//	data->time.stop();
 	//std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(data->time.duration()).count() << std::endl;
 	glutPostRedisplay();
 }
@@ -143,8 +147,9 @@ void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	data->voxel_cube->draw(data->base, data->transform);
-	//data->voxel->transform = glm::translate(glm::vec3{ data->size / 2, 0, 0 }) * data->voxel->transform;// * glm::rotate(data->angle, glm::vec3{ 0.0f, 1.0f, 1.0f });
+	data->voxel_model->draw(data->base, data->transform);
+
+	//data->voxel_cube->draw(data->base, data->transform);
 	data->voxel_cut->draw(data->base, data->transform, glm::translate(glm::vec3{ data->size / 2, 0, 0 }));
 	glutSwapBuffers();
 }
@@ -186,37 +191,41 @@ int main(int argc, char** argv)
 	data = make_unique<Data>();
 	auto s = std::chrono::time_point_cast<std::chrono::nanoseconds>(clock.now());
 	def.seed(static_cast<unsigned long>(s.time_since_epoch().count()));
-	std::uniform_int<> rand(0, data->size * 2);
+	std::uniform_int<> rand(0, data->size / 5);
 
 	data->voxel_cut = make_unique<voxel_chunk>(data->size, data->size, data->size);
 	data->voxel_cube = make_unique<voxel_chunk>(data->size, data->size, data->size);
 	data->angle = 0.0f;	
 	auto& voxel_data = *data->voxel_cut;
+
+	data->voxel_model = std::make_unique<voxel_model>(data->size / 3, glm::vec3{3, 3, 3});
+
 	for (int x = 0; x < data->size; x++)
 	{
 		for (int y = 0; y < data->size; y++)
 		{
 			for (int z = 0; z < data->size; z++)
 			{
-				auto recentered_x = -x + data->size / 2;
+				/*auto recentered_x = -x + data->size / 2;
 				auto recentered_y = -y + data->size / 2;
 				auto recentered_z = -z + data->size / 2;
 				if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
 					&& ((z * x) / (y ? y : 1)) <= data->size / 2
-					)
+					)*/
 				{
 				
 					voxel_data.on(x, y, z);
 					data->voxel_cube->on(x, y, z);
+					data->voxel_model->on(x, y, z);
 				}
 
 			}
 		}
 	}
 
-	difference(glm::vec3(), *data->voxel_cube, glm::vec3{ data->size / 2, 0, 0 }, *data->voxel_cut);
-	difference(glm::vec3{ data->size / 2, data->size / 2, 0 }, *data->voxel_cube, glm::vec3(), *data->voxel_cut);
-
+	/*voxel::difference(glm::vec3(), *data->voxel_cube, glm::vec3{ data->size / 2, 0, 0 }, *data->voxel_cut);
+	voxel::difference(glm::vec3{ data->size / 2, data->size / 2, 0 }, *data->voxel_cube, glm::vec3(), *data->voxel_cut);
+*/
 	voxel_data.get(0, 0, 0);
 	auto begin = clock.now();
 	voxel_data.update();
@@ -264,7 +273,6 @@ int main(int argc, char** argv)
 
 
 	data->transform = glm::translate(glm::vec3(0, 0, -data->size - 2));
-
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthMask(GL_TRUE);

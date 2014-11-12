@@ -23,7 +23,7 @@ public:
 		{
 			return this->m_index != rhs.m_index;
 		}
-		auto operator*() -> typename Parent::const_reference_type
+		auto operator*() -> sub_view
 		{
 			return this->m_parent[this->m_index];
 		}
@@ -43,6 +43,11 @@ public:
 	{
 
 	}
+	const_nd_view& operator =(const const_nd_view& rhs)
+	{
+		this->m_offset = rhs.m_offset;
+		return *this;
+	}
 	sub_view operator [](int index)
 	{
 		return sub_view(this->m_parent, this->m_offset + index * this->m_parent.chunk_size<D>());
@@ -57,11 +62,11 @@ public:
 	}
 	const_iterator end()
 	{
-		return const_iterator(*this, this->dim_size<Parent::dimension - 1>());
+		return const_iterator(*this, this->m_parent.dim_size<Parent::dimension - 1>());
 	}
 
 private:
-	int const m_offset;
+	int m_offset;
 	const Parent& m_parent;
 };
 template <class Parent>
@@ -100,6 +105,11 @@ public:
 	{
 
 	}
+	const_nd_view& operator =(const const_nd_view& rhs)
+	{
+		this->m_offset = rhs.m_offset;
+		return *this;
+	}
 	auto operator [](int index) const -> typename Parent::const_reference_type
 	{
 		return this->m_parent.get_absolute(index + this->m_offset);
@@ -110,11 +120,11 @@ public:
 	}
 	const_iterator end()
 	{
-		return const_iterator(*this, this->dim_size<Parent::dimension - 1>());
+		return const_iterator(*this, this->m_parent.dim_size<Parent::dimension - 1>());
 	}
 
 private:
-	int const m_offset;
+	int m_offset;
 	const Parent& m_parent;
 };
 
@@ -183,6 +193,11 @@ public:
 	{
 
 	}
+	nd_view& operator =(const nd_view& rhs)
+	{
+		this->m_offset = rhs.m_offset;
+		return *this;
+	}
 	sub_view operator [](int index)
 	{
 		return sub_view(this->m_parent, this->m_offset + index * this->m_parent.chunk_size<D>());
@@ -198,7 +213,7 @@ public:
 	}
 	iterator end()
 	{
-		return iterator(*this, this->dim_size<Parent::dimension - D>());
+		return iterator(*this, this->m_parent.dim_size<Parent::dimension - D>());
 	}
 	const_iterator begin() const
 	{
@@ -206,11 +221,11 @@ public:
 	}
 	const_iterator end() const
 	{
-		return const_iterator(*this, this->dim_size<Parent::dimension - D>());
+		return const_iterator(*this, this->m_parent.dim_size<Parent::dimension - D>());
 	}
 
 private:
-	int const m_offset;
+	int m_offset;
 	Parent& m_parent;
 };
 
@@ -275,6 +290,11 @@ public:
 	{
 
 	}
+	nd_view& operator =(const nd_view& rhs)
+	{
+		this->m_offset = rhs.m_offset;
+		return *this;
+	}
 	auto operator [](int index) -> typename Parent::reference_type
 	{
 		return this->m_parent.get_absolute(index + this->m_offset);
@@ -289,18 +309,18 @@ public:
 	}
 	iterator end()
 	{
-		return iterator(*this, this->dim_size<Parent::dimension - 1>());
+		return iterator(*this, this->m_parent.dim_size<Parent::dimension - 1>());
 	}
 	const_iterator begin() const
 	{
 		return const_iterator(*this, 0);
 	}
-	const_iterator end() const
+	const_iterator end() const 
 	{
-		return const_iterator(*this, this->dim_size<Parent::dimension - 1>());
+		return const_iterator(*this, this->m_parent.dim_size<Parent::dimension - 1>());
 	}
 private:
-	int const m_offset;
+	int m_offset;
 	Parent& m_parent;
 };
 
@@ -341,13 +361,13 @@ public:
 	};
 	struct const_iterator
 	{
-		const_iterator(nd_array& parent, int index)
+		const_iterator(const nd_array& parent, int index)
 			: m_parent(parent)
 			, m_index(index)
 		{
 
 		}
-		bool operator !=(const iterator& rhs)
+		bool operator !=(const const_iterator& rhs)
 		{
 			return this->m_index != rhs.m_index;
 		}
@@ -355,13 +375,13 @@ public:
 		{
 			return this->m_parent[this->m_index];
 		}
-		iterator& operator++()
+		const_iterator& operator++()
 		{
 			this->m_index++;
 			return *this;
 		}
 	private:
-		nd_array& m_parent;
+		const nd_array& m_parent;
 		int m_index;
 	};
 
