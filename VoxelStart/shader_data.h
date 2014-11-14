@@ -14,4 +14,10 @@ namespace shaders
 		extern std::string geometry;
 		extern std::string fragment;
 	}
+	namespace voxel_direct
+	{
+		extern std::string vertex;
+		extern std::string geometry;
+		extern std::string fragment;
+	}
 }

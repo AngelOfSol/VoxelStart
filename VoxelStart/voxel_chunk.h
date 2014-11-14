@@ -80,7 +80,7 @@ public:
 	glm::vec3 dimensions() const { return glm::vec3{ this->width(), this->height(), this->depth() }; };
 
 	void subdivide(unsigned int denom);
-	static const shader_program::ptr voxel_shader();
+	static const shader_program& voxel_shader();
 
 	float scale;
 

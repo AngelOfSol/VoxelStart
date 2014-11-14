@@ -83,6 +83,7 @@
     <ClCompile Include="timer.cpp" />
     <ClCompile Include="uniform.cpp" />
     <ClCompile Include="voxel_chunk.cpp" />
+    <ClCompile Include="voxel_chunk_direct.cpp" />
     <ClCompile Include="voxel_model.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -97,6 +98,7 @@
     <ClInclude Include="uniform.h" />
     <ClInclude Include="update.h" />
     <ClInclude Include="voxel_chunk.h" />
+    <ClInclude Include="voxel_chunk_direct.h" />
     <ClInclude Include="voxel_model.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

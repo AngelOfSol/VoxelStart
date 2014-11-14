@@ -5,7 +5,7 @@
 class shader_program
 {
 public:
-	using ptr = std::shared_ptr<shader_program>;
+	using ptr = std::unique_ptr<shader_program>;
 
 	shader_program(void);
 	shader_program(const shader_program&) = delete;

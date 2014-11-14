@@ -45,6 +45,9 @@
     <ClCompile Include="voxel_model.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="voxel_chunk_direct.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="nd_array.h">
@@ -81,6 +84,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="voxel_model.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="voxel_chunk_direct.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

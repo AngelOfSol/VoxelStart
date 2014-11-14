@@ -221,15 +221,15 @@ void voxel_chunk::unbind_buffers() const
 
 void voxel_chunk::set_uniforms(glm::mat4 perspective, glm::mat4 view_port, glm::mat4 extra_model_transform) const
 {
-	glUseProgram(voxel_chunk::voxel_shader()->id);
+	glUseProgram(voxel_chunk::voxel_shader().id);
 
 	auto model = extra_model_transform * this->model_transform * glm::scale(glm::vec3(this->scale));
 	auto mvp = perspective * view_port * model;
-	uniform(*voxel_chunk::voxel_shader(), "mvp_transform", mvp);
-	uniform(*voxel_chunk::voxel_shader(), "model_transform", model);
-	uniform(*voxel_chunk::voxel_shader(), "normal_transform", glm::transpose(glm::inverse(model)));
+	uniform(voxel_chunk::voxel_shader(), "mvp_transform", mvp);
+	uniform(voxel_chunk::voxel_shader(), "model_transform", model);
+	uniform(voxel_chunk::voxel_shader(), "normal_transform", glm::transpose(glm::inverse(model)));
 }
-const shader_program::ptr voxel_chunk::voxel_shader()
+const shader_program& voxel_chunk::voxel_shader()
 {
 	if (voxel_chunk::s_voxel_shader == nullptr)
 	{
@@ -239,7 +239,7 @@ const shader_program::ptr voxel_chunk::voxel_shader()
 
 		voxel_chunk::s_voxel_shader = make_program({ vertex, geometry, fragment });
 	}
-	return voxel_chunk::s_voxel_shader;
+	return *voxel_chunk::s_voxel_shader;
 }
 void voxel_chunk::subdivide(unsigned int denom)
 {

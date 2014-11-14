@@ -12,15 +12,13 @@ namespace voxel
 	overlap_data overlap_of(glm::vec3 position0, glm::vec3 dimension0, glm::vec3 position1, glm::vec3 dimension1)
 	{
 		overlap_data ret;
-		auto half_dim0 = dimension0 / 2.0f;
-		auto half_dim1 = dimension1 / 2.0f;
 
-		ret.start = glm::max(position0 - half_dim0, position1 - half_dim1);
-		ret.end = glm::min(position0 + half_dim0, position1 + half_dim1);
+		ret.start = glm::max(position0, position1);
+		ret.end = glm::min(position0 + dimension0, position1 + dimension1);
 
 		return ret;
 	}
-	void difference(glm::vec3 position0, voxel_chunk& minuend, glm::vec3 position1, const voxel_chunk& subtrahend)
+	void difference(glm::vec3 position0, voxel_chunk_direct& minuend, glm::vec3 position1, const voxel_chunk_direct& subtrahend)
 	{
 		auto overlap = overlap_of(position0
 			, glm::vec3{ minuend.width(), minuend.height(), minuend.depth() }
@@ -30,18 +28,21 @@ namespace voxel
 		auto get_minuend_voxel = [&minuend, position0](int x, int y, int z)
 		{
 			glm::vec3 pos{ x, y, z };
-			return minuend.get(pos - position0 + minuend.dimensions() / 2.0f);
+			glm::vec3 ds = pos - position0;
+			return minuend.get(static_cast<int>(ds.x), static_cast<int>(ds.y), static_cast<int>(ds.z));
 		};
 		auto set_minuend_voxel = [&minuend, position0](bool val, int x, int y, int z)
 		{
+
 			glm::vec3 pos{ x, y, z };
-			auto ans = pos - position0 + minuend.dimensions() / 2.0f;
-			return minuend.set(val, pos - position0 + minuend.dimensions() / 2.0f);
+			glm::vec3 ds = pos - position0;
+			return minuend.set(val, static_cast<int>(ds.x), static_cast<int>(ds.y), static_cast<int>(ds.z));
 		};
 		auto get_subtrahend_voxel = [&subtrahend, position1](int x, int y, int z)
 		{
 			glm::vec3 pos{ x, y, z };
-			return subtrahend.get(pos - position1 + subtrahend.dimensions() / 2.0f);
+			glm::vec3 ds = pos - position1;
+			return subtrahend.get(static_cast<int>(ds.x), static_cast<int>(ds.y), static_cast<int>(ds.z));
 		};
 
 		for (int i = static_cast<int>(overlap.start.x); i < static_cast<int>(overlap.end.x); i++)
@@ -52,7 +53,6 @@ namespace voxel
 				{
 					set_minuend_voxel(get_minuend_voxel(i, j, k) && !get_subtrahend_voxel(i, j, k), i, j, k);
 				}
-
 			}
 		}
 	}

@@ -13,7 +13,7 @@ shader_program::~shader_program()
 
 shader_program::ptr make_program(const std::vector<shader::ptr>& shaders)
 {
-	auto ret = std::make_shared<shader_program>();
+	auto ret = std::make_unique<shader_program>();
 	for (auto shader : shaders)
 	{
 		if (!shader)

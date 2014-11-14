@@ -11,6 +11,7 @@
 #include <chrono>
 #include <random>
 #include "voxel_model.h"
+#include "voxel_chunk_direct.h"
 #include "timer.h"
 #include "cut_voxel.h"
 using std::unique_ptr;
@@ -21,20 +22,22 @@ create voxel_chunk holder
 */
 struct Data
 {
-	std::unique_ptr<voxel_chunk> voxel_cube;
-	std::unique_ptr<voxel_chunk> voxel_cut;
-	std::unique_ptr<voxel_model> voxel_model;
+	std::unique_ptr<voxel_chunk_direct> voxel_direct;
+	std::unique_ptr<voxel_chunk_direct> voxel_the_cutter;
 	shader_program::ptr shader;
 
 	glm::mat4 world;
 	glm::mat4 transform;
 	glm::mat4 base;
 	GLfloat angle;
-	const int size = 100;
-	const float speed = 0.1f;
+	const int size = 60;
+	const float speed = 0.1f * size / 100.0f;
+	const float rot_speed = 0.1f;
 	int elapsed;
 	glm::vec2 mouse;
 	timer time;
+
+	glm::mat4 s_transform;
 
 	float dx;
 	float dy;
@@ -69,16 +72,16 @@ void keypress(unsigned char key, int x, int y)
 		data->dz = -data->speed;
 		break;
 	case 'j':
-		data->dry = -data->speed;
+		data->dry = -data->rot_speed;
 		break;
 	case 'l':
-		data->dry = data->speed;
+		data->dry = data->rot_speed;
 		break;
 	case 'i':
-		data->drx = -data->speed;
+		data->drx = -data->rot_speed;
 		break;
 	case 'k':
-		data->drx = data->speed;
+		data->drx = data->rot_speed;
 		break;
 	}
 }
@@ -124,22 +127,19 @@ void idle()
 	auto change = glutGet(GLUT_ELAPSED_TIME) - data->elapsed;
 	data->elapsed += change;
 	data->angle += 0.0005f * change;
-
+	auto new_pos = glm::vec3{ sin(data->angle) * data->size * 2 - data->size / 2, cos(data->angle) * data->size * 2 + data->size, 0 };
+	data->s_transform = glm::translate(glm::vec3(1.0f / 3.0f) * new_pos);
 	glm::vec2 middle = glm::vec2{ 400, 400 };
-	auto diff = data->mouse - middle;
-	auto invert = glm::vec2{ -diff.y, diff.x };
+
 
 	data->transform = glm::rotate(change * data->drx * 0.01f, glm::vec3{ 1, 0, 0 }) * data->transform;
 	data->transform = glm::rotate(change * data->dry * 0.01f, glm::vec3{ 0, 1, 0 })* data->transform;
 	data->transform = glm::translate(glm::vec3{ data->dx, data->dy, data->dz } *(float)change) * data->transform;
 
+	voxel::difference(glm::vec3(), *data->voxel_direct, new_pos, *data->voxel_the_cutter);
 
-	data->voxel_model->update();
-//	data->time.start();
-	data->voxel_cut->update();
-	data->voxel_cube->update();
-//	data->time.stop();
-	//std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(data->time.duration()).count() << std::endl;
+	data->voxel_direct->update();
+	data->voxel_the_cutter->update();
 	glutPostRedisplay();
 }
 
@@ -147,10 +147,9 @@ void draw()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	data->voxel_model->draw(data->base, data->transform);
+	data->voxel_direct->draw(data->base, data->transform);
 
-	//data->voxel_cube->draw(data->base, data->transform);
-	data->voxel_cut->draw(data->base, data->transform, glm::translate(glm::vec3{ data->size / 2, 0, 0 }));
+	data->voxel_the_cutter->draw(data->base, data->transform, data->s_transform);
 	glutSwapBuffers();
 }
 void mouse(int x, int y)
@@ -189,49 +188,41 @@ int main(int argc, char** argv)
 	std::default_random_engine def;
 
 	data = make_unique<Data>();
+
 	auto s = std::chrono::time_point_cast<std::chrono::nanoseconds>(clock.now());
 	def.seed(static_cast<unsigned long>(s.time_since_epoch().count()));
 	std::uniform_int<> rand(0, data->size / 5);
 
-	data->voxel_cut = make_unique<voxel_chunk>(data->size, data->size, data->size);
-	data->voxel_cube = make_unique<voxel_chunk>(data->size, data->size, data->size);
 	data->angle = 0.0f;	
-	auto& voxel_data = *data->voxel_cut;
 
-	data->voxel_model = std::make_unique<voxel_model>(data->size / 3, glm::vec3{3, 3, 3});
+	data->voxel_direct = std::make_unique<voxel_chunk_direct>(data->size, data->size, data->size);
+	data->voxel_the_cutter = std::make_unique<voxel_chunk_direct>(data->size, data->size, data->size);
 
 	for (int x = 0; x < data->size; x++)
 	{
 		for (int y = 0; y < data->size; y++)
 		{
-			for (int z = 0; z < data->size; z++)
+			for (int z = 0; z < data->size * 5; z++)
 			{
-				/*auto recentered_x = -x + data->size / 2;
+				auto recentered_x = -x + data->size / 2;
 				auto recentered_y = -y + data->size / 2;
 				auto recentered_z = -z + data->size / 2;
-				if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y + recentered_z * recentered_z) <= data->size / 2
+				if (sqrt(recentered_x * recentered_x + recentered_y* recentered_y) <= data->size / 2
 					&& ((z * x) / (y ? y : 1)) <= data->size / 2
-					)*/
+					)
 				{
-				
-					voxel_data.on(x, y, z);
-					data->voxel_cube->on(x, y, z);
-					data->voxel_model->on(x, y, z);
+					data->voxel_direct->on(x, y, z);
+					data->voxel_the_cutter->on(x, y, z);
 				}
 
 			}
 		}
 	}
 
-	/*voxel::difference(glm::vec3(), *data->voxel_cube, glm::vec3{ data->size / 2, 0, 0 }, *data->voxel_cut);
-	voxel::difference(glm::vec3{ data->size / 2, data->size / 2, 0 }, *data->voxel_cube, glm::vec3(), *data->voxel_cut);
-*/
-	voxel_data.get(0, 0, 0);
-	auto begin = clock.now();
-	voxel_data.update();
-	auto end = clock.now();
-	auto diff = end - begin;
-	std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(diff).count() << std::endl;
+	data->time.stop();
+	data->time.start();
+	auto time = data->time.lap();
+	std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(time).count() << std::endl;
 	shader::ptr vertex = make_shader(shaders::voxel::vertex, GL_VERTEX_SHADER);
 	shader::ptr geometry = make_shader(shaders::voxel::geometry, GL_GEOMETRY_SHADER);
 	shader::ptr fragment = make_shader(shaders::voxel::fragment, GL_FRAGMENT_SHADER);
@@ -240,12 +231,14 @@ int main(int argc, char** argv)
 	float zFar = 600.0f;
 
 	data->shader = make_program({ vertex, geometry, fragment });
-	glUseProgram(voxel_chunk::voxel_shader()->id);
+	glUseProgram(voxel_chunk::voxel_shader().id);
 	data->base =
 		glm::perspective(glm::radians(60.0f), 1.0f, zNear, zFar)
 		;
+
 	data->dx = 0;
 	data->dy = 0;
+	data->dz = 0;
 	data->drx = 0;
 	data->dry = 0;
 
@@ -268,8 +261,12 @@ int main(int argc, char** argv)
 		}
 	}
 	lights.push_back(glm::vec3(0, 0, data->size + 2));
-	uniform(*voxel_chunk::voxel_shader(), "lights", lights);
-	uniform(*voxel_chunk::voxel_shader(), "num_lights", lights.size());
+
+	glUseProgram(voxel_chunk_direct::shader().id);
+
+	uniform(voxel_chunk_direct::shader(), "lights", lights);
+	uniform(voxel_chunk_direct::shader(), "num_lights", lights.size());
+
 
 
 	data->transform = glm::translate(glm::vec3(0, 0, -data->size - 2));

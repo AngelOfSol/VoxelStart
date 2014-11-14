@@ -328,9 +328,9 @@ template <typename T, int D>
 class nd_array
 {
 public:
-	using dim_array = std::array<int, D>;
-	using sub_view = nd_view<nd_array, D - 1>;
-	using const_sub_view = const_nd_view<nd_array, D - 1>;
+	using dim_array = std::array < int, D > ;
+	using sub_view = nd_view < nd_array, D - 1 > ;
+	using const_sub_view = const_nd_view < nd_array, D - 1 > ;
 	using reference_type = T&;
 	using const_reference_type = T const&;
 
@@ -410,7 +410,7 @@ public:
 				this->m_chunk_sizes[i] = this->m_chunk_sizes[i + 1] * dims[i + 1];
 			}
 		}
-		this->m_data.resize(this->chunk_size<D>() * dims[D - 1]);
+		this->m_data.resize(this->m_size);
 	}
 
 	sub_view operator [](int index)
@@ -465,6 +465,10 @@ public:
 		return const_iterator(*this, this->dim_size<0>());
 	}
 
+	auto data() -> decltype(std::vector<T>().data())
+	{
+		return this->m_data.data();
+	}
 private:
 	std::vector<T> m_data;
 	dim_array m_sizes;

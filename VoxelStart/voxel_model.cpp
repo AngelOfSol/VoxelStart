@@ -25,7 +25,7 @@ void voxel_model::difference(const voxel_model & subtrahend)
 		auto voxel_pos = voxel_iter.vec() + this->position;
 		for (auto sub_voxel_iter = subtrahend.begin(); sub_voxel_iter != subtrahend.end(); ++sub_voxel_iter)
 		{
-			voxel::difference(voxel_pos, *voxel_iter, sub_voxel_iter.vec() + subtrahend.position, *sub_voxel_iter);
+			//voxel::difference(voxel_pos, *voxel_iter, sub_voxel_iter.vec() + subtrahend.position, *sub_voxel_iter);
 		}
 	}
 }
